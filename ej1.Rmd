@@ -1,0 +1,43 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Excercise 1
+
+```{r}
+library(readr)
+library(randomForest)
+library(pdp)
+library(fastDummies)
+
+datos <- read_csv("day.csv", show_col_types  = FALSE)
+
+season_mapping <- c("winter", "spring", "summer", "fall")
+datos$season <- season_mapping[datos$season]
+
+encoded_data <- dummy_cols(datos, select_columns = "season", remove_selected_columns = TRUE)
+encoded_data <- encoded_data[,-19]
+
+encoded_data$misty <- ifelse(encoded_data$weathersit == 2, 1, 0)
+encoded_data$rain <- ifelse(encoded_data$weathersit > 2, 1, 0)
+
+#(t-t_min)/(t_max-t_min), t_min=-8, t_max=+39
+#t = t_norm * (t_max-t_min) + t_min
+t_min = -8
+t_max = 39
+encoded_data$temp <- encoded_data$temp * (t_max - t_min) + t_min
+encoded_data$hum <- encoded_data$hum * 100
+encoded_data$windspeed <- encoded_data$windspeed * 67
+encoded_data$days_since_2011 <- as.numeric(as.Date(encoded_data$dteday) - as.Date("2011-01-01"))
+
+datos <- encoded_data[, c("cnt","workingday", "holiday", "season_fall", "season_spring", "season_summer", "misty", "rain", "temp", "hum", "windspeed", "days_since_2011")]
+
+rf <- randomForest(cnt~., data=datos)
+
+pdp <- partial(rf, pred.var = "temp")
+plotPartial(pdp)
+  
+```
+
+

@@ -1,0 +1,46 @@
+---
+title: "ej3"
+author: "Máximo Valero Sanz"
+date: "2024-05-23"
+output: html_document
+---
+
+```{r}
+library(randomForest)
+library(ggplot2)
+library(dplyr)
+library(pdp)
+
+kc_house_data <- read.csv("kc_house_data.csv")
+
+sum(is.na(kc_house_data))
+
+features <- kc_house_data[c("bedrooms", "bathrooms", "sqft_living", "sqft_lot", "floors")]
+price <- kc_house_data$price
+
+#Split data into training and testing
+set.seed(42)
+rows <- sample(1:nrow(features))
+train_indices <- rows[1:round(0.7 * length(rows))]
+test_indices <- rows[(round(0.7 * length(rows)) + 1):length(rows)]
+
+train_data <- features[train_indices, ]
+train_price <- price[train_indices]
+
+test_data <- features[test_indices, ]
+test_price <- price[test_indices]
+
+#Random Forest 
+rf_model <- randomForest(x = train_data, y = train_price, ntree = 100)
+
+feature_list <- c("bedrooms", "bathrooms", "sqft_living", "floors", "yr_built)
+
+for (feature in feature_list) {
+  pd <- partial(rf_model, pred.var = feature, train = train_data, grid.resolution = 20)
+  plot(pd, main = paste("PDP for", feature))
+}
+
+pd_lot <- partial(rf_model, pred.var = "sqft_lot", train = train_data, grid.resolution = 20)
+plot(pd_lot, main = "PDP for sqft_lot")
+
+```
