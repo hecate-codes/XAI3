@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Excercise 2
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(randomForest)
+library(pdp)
+
+# Load the dataset
+datos <- read_csv("day.csv", show_col_types = FALSE)
+
+# Fit the Random Forest model
+rf <- randomForest(cnt ~ ., data = datos)
+
+# Set the seed for reproducibility
+set.seed(42)
+
+# Sample the data (e.g., 50 samples)
+sampled_data <- datos %>% sample_n(300)
+
+# Generate the 2D PDP
+pdp_2d <- partial(rf, pred.var = c("hum", "temp"), 
+                  train = sampled_data, grid.resolution = 20)
+```
+
+```{r}
+pdp_data <- as.data.frame(pdp_2d)
+ggplot() +
+  geom_tile(data=pdp_data, 
+            aes(x = hum, y = temp, fill = yhat), 
+            width = 0.1, height = 0.05) +
+  scale_fill_viridis_c(option = "inferno", name = "Predicted Count") +
+  theme_minimal() +
+  labs(title = "2D Partial Dependence Plot",
+       x = "Humidity",
+       y = "Temperature") +
+  geom_rug(data = sampled_data, aes(x = hum, y = temp), sides = "bl") +
+  theme(legend.position = "right")
+```
